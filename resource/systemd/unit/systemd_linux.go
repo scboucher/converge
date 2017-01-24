@@ -74,7 +74,7 @@ func (l LinuxExecutor) QueryUnit(unitName string, verify bool) (*Unit, error) {
 	if len(units) == 0 {
 		return nil, fmt.Errorf("no results when querying for unit named %s", unitName)
 	}
-	unit, err := unitFromStatus(conn, units[0])
+	unit, err := unitFromStatus(l.dbusConn, &units[0])
 	if err != nil {
 		return nil, errors.Wrap(err, "Cannot query unit by name")
 	}
