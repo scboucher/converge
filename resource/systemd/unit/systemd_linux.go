@@ -16,18 +16,17 @@
 
 package unit
 
-import (
-	"github.com/coreos/go-systemd/dbus"
-	"github.com/pkg/errors"
-)
+import "github.com/pkg/errors"
 
 // LinuxExecutor provides a command executor for interacting with systemd on Linux
-type LinuxExecutor struct{}
+type LinuxExecutor struct {
+	Connector DbusConnector
+}
 
 // ListUnits will use dbus to get a list of all units
 func (l LinuxExecutor) ListUnits() ([]*Unit, error) {
 	var units []*Unit
-	conn, err := dbus.New()
+	conn, err := l.Connector.New()
 	if err != nil {
 		return units, err
 	}
@@ -89,5 +88,5 @@ func (l LinuxExecutor) UnitStatus(Unit) (Unit, error) {
 }
 
 func realExecutor() (SystemdExecutor, error) {
-	return LinuxExecutor{}, nil
+	return LinuxExecutor{CoreosDbus{}}, nil
 }

@@ -17,11 +17,13 @@ package unit
 import "fmt"
 
 type Unit struct {
-	Name        string
-	Description string
-	ActiveState string
-	Path        string
-	Type        UnitType
+	Name           string
+	Description    string
+	ActiveState    string
+	Path           string
+	Type           UnitType
+	Properties     map[string]interface{}
+	TypeProperties map[string]interface{}
 }
 
 func (u *Unit) IsServiceUnit() bool {
@@ -29,14 +31,24 @@ func (u *Unit) IsServiceUnit() bool {
 }
 
 func PPUnit(u *Unit) string {
+	knownTypeProps := make(map[string]string)
+	for p, v := range u.TypeProperties {
+		knownTypeProps[p] = fmt.Sprintf("%T", v)
+	}
 	fmtStr := `
 Unit
----------------
+=================
 Name:        %s
 Description: %s
 ActiveState: %s
 Path:        %s
----------------
+-----------------
+Properties:
+%v
+-----------------
+Typed Properties:
+%v
+=================
 `
-	return fmt.Sprintf(fmtStr, u.Name, u.Description, u.ActiveState, u.Path)
+	return fmt.Sprintf(fmtStr, u.Name, u.Description, u.ActiveState, u.Path, u.Properties, knownTypeProps)
 }
