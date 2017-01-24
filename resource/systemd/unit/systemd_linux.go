@@ -31,20 +31,14 @@ type LinuxExecutor struct {
 // ListUnits will use dbus to get a list of all units
 func (l LinuxExecutor) ListUnits() ([]*Unit, error) {
 	var units []*Unit
-	conn, err := l.Connector.New()
-	if err != nil {
-		return units, err
-	}
-	defer conn.Close()
-
-	unitStatuses, err := conn.ListUnits()
+	unitStatuses, err := l.dbusConn.ListUnits()
 
 	if err != nil {
 		return units, err
 	}
 
 	for _, status := range unitStatuses {
-		unit, err := unitFromStatus(conn, &status)
+		unit, err := unitFromStatus(l.dbusConn, &status)
 		if err != nil {
 			return units, err
 		}
@@ -103,11 +97,19 @@ func (l LinuxExecutor) ReloadUnit(*Unit) error {
 
 // UnitStatus will use dbus to get the unit status
 func (l LinuxExecutor) UnitStatus(*Unit) (*Unit, error) {
-	return Unit{}, nil
+	return &Unit{}, nil
 }
 
 func realExecutor() (SystemdExecutor, error) {
-	return LinuxExecutor{CoreosDbus{}}, nil
+	conn, err := dbus.New()
+	if err != nil {
+		return nil, err
+	}
+	return LinuxExecutor{conn}, nil
+}
+
+func (l LinuxExecutor) Close() {
+	l.dbusConn.Close()
 }
 
 func NewExecutor(c SystemdConnection) SystemdExecutor {
@@ -141,8 +143,8 @@ func (l LinuxExecutor) unitExists(unitName string) (bool, error) {
 	}
 	for _, u := range units {
 		if u.Name == unitName {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
