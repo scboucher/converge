@@ -31,7 +31,7 @@ type LinuxExecutor struct {
 // ListUnits will use dbus to get a list of all units
 func (l LinuxExecutor) ListUnits() ([]*Unit, error) {
 	var units []*Unit
-	conn, err := dbus.New()
+	conn, err := l.Connector.New()
 	if err != nil {
 		return units, err
 	}
@@ -107,7 +107,7 @@ func (l LinuxExecutor) UnitStatus(*Unit) (*Unit, error) {
 }
 
 func realExecutor() (SystemdExecutor, error) {
-	return LinuxExecutor{}, nil
+	return LinuxExecutor{CoreosDbus{}}, nil
 }
 
 func NewExecutor(c SystemdConnection) SystemdExecutor {

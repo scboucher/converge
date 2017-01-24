@@ -43,15 +43,19 @@ func (u *Unit) IsServiceUnit() bool {
 }
 
 func PPUnit(u *Unit) string {
+	knownTypeProps := make(map[string]string)
+	for p, v := range u.TypeProperties {
+		knownTypeProps[p] = fmt.Sprintf("%T", v)
+	}
 	fmtStr := `
 Unit
----------------
+=================
 Name:        %s
 Type:        %s
 Description: %s
 ActiveState: %s
 Path:        %s
----------------
+=================
 `
 	return fmt.Sprintf(fmtStr, u.Name, u.Type, u.Description, u.ActiveState, u.Path)
 }
