@@ -16,6 +16,7 @@ package brew
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/asteris-llc/converge/resource/package"
 )
@@ -24,17 +25,52 @@ import (
 const (
 	// NotInstalled means the package is not installed
 	NotInstalled = "Not Installed"
+	BrewConfig   = "brew config"
+	BrewCellar   = "HOMEBREW_CELLAR"
 )
 
+// BrewManager is a concrete implemantation of PackageManager for homebrew
 type BrewManager struct {
 	Sys pkg.SysCaller
 }
 
 func (b *BrewManager) InstalledVersion(p string) (pkg.PackageVersion, bool) {
+	var version string
+	var installed bool
+	var cellar string
 	result, err := b.Sys.Run(fmt.Sprintf("brew info %s", p))
+	line3 := strings.Split(strings.TrimSpace(string(result)), "\n")[3]
+	if strings.Compare(strings.TrimSpace(line3), NotInstalled) == 0 {
+		return "", false
+	}
+	config, err := b.Sys.Run(fmt.Sprintf(BrewConfig))
+	brewConfigLines := strings.Split(strings.TrimSpace(string(config)), "\n")
+	for _, line := range brewConfigLines {
+		if strings.Contains(line, BrewCellar) {
+			cellar = strings.TrimSpace(strings.Split(line, ": ")[1])
+			version = strings.Split(strings.Split(line3, " ")[0], "%s/%s", cellar, p)
+			installed = true
+
+		}
+	}
+
+	return version, installed
+
+}
+func (b *BrewManager) InstallPackage(p string) (string, error) {
+	if _, isInstalled := b.InstalledVersion(p); isInstalled {
+		return "already installed", nil
+	}
+	res, err := b.Sys.Run(fmt.Sprintf("brew install %s", p))
+	return string(res), err
 }
 
-func (b *BrewManager) RemovePackage(pkg string) (string, error) {
-	res, err := b.Sys.Run(fmt.Sprintf("brew uninstall --force %s", pkg))
-	return string(res), err
+func (b *BrewManager) RemovePackage(p string) (string, error) {
+	switch _, isInstalled := b.InstalledVersion(p); isInstalled {
+	case true:
+		res, err := b.Sys.Run(fmt.Sprintf("brew uninstall --force %s", p))
+		return string(res), err
+	default:
+		return "package is not installed", nil
+	}
 }
